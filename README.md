@@ -54,7 +54,7 @@ Isso configurará o repositório remoto e enviará suas modificações para lá.
 
 ## Menu principal do site
 
-![image](https://github.com/user-attachments/assets/05a896e3-fb4b-4e55-bc02-e561d6daad6f)
+![image](https://github.com/moscardini-carvalho/lista-de-tarefas/blob/master/foto%20do%20menu.png)
 
 
 ---
