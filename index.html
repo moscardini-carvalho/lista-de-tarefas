@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+  <title>Gerenciador de Tarefas</title>
+</head>
+<body>
+  <div class="container">
+    <h1>Gerenciador de Tarefas</h1>
+    <input type="text" id="titulo" placeholder="Título da tarefa">
+    <select id="prioridade">
+      <option value="alta">Alta</option>
+      <option value="media">Média</option>
+      <option value="baixa">Baixa</option>
+    </select>
+    <button onclick="criarTarefa()">Adicionar Tarefa</button>
+
+    <select id="filtroPrioridade" onchange="filtrarTarefas()">
+      <option value="">Todas</option>
+      <option value="alta">Alta</option>
+      <option value="media">Média</option>
+      <option value="baixa">Baixa</option>
+    </select>
+
+    <div class="tarefas" id="listaTarefas"></div>
+
+    <h3>Histórico de Comandos:</h3>
+    <div id="historico"></div>
+  </div>
+
+  <script>
+    class Tarefa {
+      constructor(titulo, prioridade) {
+        this.titulo = titulo;
+        this.prioridade = prioridade;
+        this.concluida = false;
+      }
+
+      concluir() {
+        this.concluida = true;
+      }
+    }
+
+    class ListaTarefas {
+      constructor() {
+        this.tarefas = [];
+      }
+
+      adicionar(tarefa) {
+        this.tarefas.push(tarefa);
+      }
+
+      [Symbol.iterator]() {
+        return new IteradorTarefas(this.tarefas);
+      }
+    }
+
+    class IteradorTarefas {
+      constructor(tarefas) {
+        this.tarefas = tarefas;
+        this.index = 0;
+      }
+
+      next() {
+        if (this.index < this.tarefas.length) {
+          return { value: this.tarefas[this.index++], done: false };
+        }
+        return { done: true };
+      }
+    }
+
+    class Comando {
+      executar() {}
+    }
+
+    class ComandoCriarTarefa extends Comando {
+      constructor(lista, tarefa, historico) {
+        super();
+        this.lista = lista;
+        this.tarefa = tarefa;
+        this.historico = historico;
+      }
+
+      executar() {
+        this.lista.adicionar(this.tarefa);
+        this.historico.adicionar(`Tarefa criada: ${this.tarefa.titulo}`);
+      }
+    }
+
+    class ComandoConcluirTarefa extends Comando {
+      constructor(tarefa, historico, observador) {
+        super();
+        this.tarefa = tarefa;
+        this.historico = historico;
+        this.observador = observador;
+      }
+
+      executar() {
+        this.tarefa.concluir();
+        this.historico.adicionar(`Tarefa concluída: ${this.tarefa.titulo}`);
+        this.observador.notificar(this.tarefa);
+      }
+    }
+
+    class FiltroPrioridade {
+      constructor(prioridade) {
+        this.prioridade = prioridade;
+      }
+
+      filtrar(tarefas) {
+        return tarefas.filter(t => t.prioridade === this.prioridade);
+      }
+    }
+
+    class ObservadorTarefaConcluida {
+      notificar(tarefa) {
+        alert(`Tarefa concluída: ${tarefa.titulo}`);
+      }
+    }
+
+    class HistoricoComandos {
+      constructor() {
+        this.entradas = [];
+      }
+
+      adicionar(entrada) {
+        this.entradas.push(entrada);
+        this.mostrar();
+      }
+
+      mostrar() {
+        document.getElementById('historico').innerHTML = this.entradas.map(e => `<div>${e}</div>`).join('');
+      }
+    }
+
+    const lista = new ListaTarefas();
+    const historico = new HistoricoComandos();
+    const observador = new ObservadorTarefaConcluida();
+
+    function criarTarefa() {
+      const titulo = document.getElementById('titulo').value;
+      const prioridade = document.getElementById('prioridade').value;
+      const tarefa = new Tarefa(titulo, prioridade);
+      new ComandoCriarTarefa(lista, tarefa, historico).executar();
+      atualizarLista();
+    }
+
+    function concluirTarefa(index) {
+      const tarefa = lista.tarefas[index];
+      new ComandoConcluirTarefa(tarefa, historico, observador).executar();
+      atualizarLista();
+    }
+
+    function atualizarLista() {
+      const filtroValor = document.getElementById('filtroPrioridade').value;
+      let tarefasParaExibir = lista.tarefas;
+      if (filtroValor) {
+        const filtro = new FiltroPrioridade(filtroValor);
+        tarefasParaExibir = filtro.filtrar(tarefasParaExibir);
+      }
+      const listaDiv = document.getElementById('listaTarefas');
+      listaDiv.innerHTML = tarefasParaExibir.map((tarefa, i) => `
+        <div class="tarefa ${tarefa.concluida ? 'concluida' : ''}">
+          ${tarefa.titulo} - ${tarefa.prioridade}
+          ${!tarefa.concluida ? `<button onclick="concluirTarefa(${lista.tarefas.indexOf(tarefa)})">Concluir</button>` : ''}
+        </div>`).join('');
+    }
+
+    function filtrarTarefas() {
+      atualizarLista();
+    }
+  </script>
+</body>
+</html>
